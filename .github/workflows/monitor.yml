@@ -1,4 +1,4 @@
-name: Second Spin Monitor
+name: Second Spin Monitor(scheduled)
 
 on:
   schedule:
