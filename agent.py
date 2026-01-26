@@ -1,24 +1,12 @@
 import requests
-from bs4 import BeautifulSoup
-import json
 
-URL = "https://www.secondspin.nl/shop/nieuw-binnen"
+URL = "https://www.secondspin.nl/wp-json/wc/store/products?orderby=date&order=desc"
 
 def run():
     response = requests.get(URL)
-    soup = BeautifulSoup(response.text, "html.parser")
+    response.raise_for_status()
 
-    products = []
-
-    # WooCommerce zet productdata in JSON scripts
-    for script in soup.find_all("script", type="application/ld+json"):
-        try:
-            data = json.loads(script.string)
-            if isinstance(data, dict) and data.get("@type") == "ItemList":
-                for item in data.get("itemListElement", []):
-                    products.append(item["item"]["name"])
-        except Exception:
-            pass
+    products = response.json()
 
     print(f"Aantal albums gevonden: {len(products)}")
 
