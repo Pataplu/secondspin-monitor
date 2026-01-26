@@ -1,17 +1,16 @@
-import requests
+from playwright.sync_api import sync_playwright
 
-URL = "https://www.secondspin.nl/wp-json/wc/store/products?orderby=date&order=desc"
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; SecondSpinAgent/1.0)"
-}
+URL = "https://www.secondspin.nl/shop/nieuw-binnen"
 
 def run():
-    response = requests.get(URL, headers=HEADERS)
-    response.raise_for_status()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.goto(URL, wait_until="networkidle")
 
-    products = response.json()
+        products = page.query_selector_all("a.product-item-link")
+        print(f"Aantal albums gevonden: {len(products)}")
 
-    print(f"Aantal albums gevonden: {len(products)}")
+        browser.close()
 
 run()
