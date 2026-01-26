@@ -1,31 +1,52 @@
-from playwright.sync_api import sync_playwright
+import json
+import requests
+from bs4 import BeautifulSoup
 
 URL = "https://www.secondspin.nl/shop/nieuw-binnen"
+STATE_FILE = "state.json"
+
+def load_state():
+    try:
+        with open(STATE_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+def save_state(state):
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f)
 
 def run():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
+    response = requests.get(
+        URL,
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
+    soup = BeautifulSoup(response.text, "html.parser")
 
-        products = []
+    # 1️⃣ Titel: "Nieuw Binnen week X"
+    title = soup.find("h1")
+    title_text = title.get_text(strip=True) if title else "UNKNOWN"
 
-        def handle_response(response):
-            url = response.url
-            if "/wp-json/" in url and "products" in url:
-                try:
-                    data = response.json()
-                    if isinstance(data, list):
-                        products.extend(data)
-                except:
-                    pass
+    # 2️⃣ Aantal resultaten: "24 resultaten"
+    results_text = soup.find(string=lambda t: "resultaten" in t.lower())
+    results_text = results_text.strip() if results_text else "UNKNOWN"
 
-        page.on("response", handle_response)
+    current = {
+        "title": title_text,
+        "results": results_text
+    }
 
-        page.goto(URL, wait_until="networkidle")
-        page.wait_for_timeout(5000)
+    previous = load_state()
 
-        print(f"Aantal albums gevonden via netwerk: {len(products)}")
+    print("Huidig:", current)
+    print("Vorig:", previous)
 
-        browser.close()
+    if current != previous:
+        print("🔔 WIJZIGING GEDETECTEERD")
+        # HIER komt straks e-mail
+    else:
+        print("Geen wijziging")
+
+    save_state(current)
 
 run()
