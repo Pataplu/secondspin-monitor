@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import json
 
 URL = "https://www.secondspin.nl/shop/nieuw-binnen"
 
@@ -7,12 +8,18 @@ def run():
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Zoek alle links naar producten
-    product_links = soup.select("a[href*='/shop/']")
+    products = []
 
-    # Uniek maken (zelfde album kan meerdere links hebben)
-    unique_products = set(link["href"] for link in product_links)
+    # WooCommerce zet productdata in JSON scripts
+    for script in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(script.string)
+            if isinstance(data, dict) and data.get("@type") == "ItemList":
+                for item in data.get("itemListElement", []):
+                    products.append(item["item"]["name"])
+        except Exception:
+            pass
 
-    print(f"Aantal albums gevonden: {len(unique_products)}")
+    print(f"Aantal albums gevonden: {len(products)}")
 
 run()
