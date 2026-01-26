@@ -7,7 +7,12 @@ def run():
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, "html.parser")
 
-    albums = soup.select(".product-item")
-    print(f"Aantal albums gevonden: {len(albums)}")
+    # Zoek alle links naar producten
+    product_links = soup.select("a[href*='/shop/']")
+
+    # Uniek maken (zelfde album kan meerdere links hebben)
+    unique_products = set(link["href"] for link in product_links)
+
+    print(f"Aantal albums gevonden: {len(unique_products)}")
 
 run()
