@@ -2,7 +2,7 @@ name: SecondSpin Agent
 
 on:
   schedule:
-    - cron: "* * * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 jobs:
