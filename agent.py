@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 
 URL = "https://www.secondspin.nl/shop/nieuw-binnen"
 STATE_FILE = "state.json"
+# cron wake-up
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0"
