@@ -1,5 +1,5 @@
 name: SecondSpin Agent
-# wake up cron
+
 on:
   schedule:
     - cron: "* * * * *"
