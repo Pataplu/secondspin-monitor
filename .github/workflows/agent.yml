@@ -1,40 +1,30 @@
-name: SecondSpin Agent
+import time
+import json
+from pathlib import Path
 
-on:
-  schedule:
-    - cron: "*/5 * * * *"
-  workflow_dispatch:
+STATE_FILE = Path("state.json")
+LOCK_FILE = Path("last_run.txt")
+MIN_INTERVAL = 15 * 60  # 15 minuten
+now = int(time.time())
 
-permissions:
-  contents: write
+# 15-min guard
+if LOCK_FILE.exists():
+    last = int(LOCK_FILE.read_text())
+    if now - last < MIN_INTERVAL:
+        print("Skip: <15 min")
+        exit(0)
 
-jobs:
-  run-agent:
-    runs-on: ubuntu-latest
+LOCK_FILE.write_text(str(now))
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
+# state.json laden of aanmaken
+if STATE_FILE.exists():
+    state = json.loads(STATE_FILE.read_text())
+else:
+    state = {}
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+# === HIER JOUW ECHTE AGENT-LOGICA ===
+state["last_run"] = now
+state["example"] = "agent ran"
 
-      - name: Install dependencies
-        run: pip install requests beautifulsoup4
-
-      - name: Run agent
-        run: python agent.py
-
-- name: Commit state (agent-state branch)
-  run: |
-    git checkout agent-state || git checkout -b agent-state
-    git pull origin agent-state --rebase || true
-    git config user.name "secondspin-agent"
-    git config user.email "agent@github.com"
-    git add state.json last_run.txt
-    git commit -m "Update state" || echo "No changes"
-    git push origin agent-state
+STATE_FILE.write_text(json.dumps(state, indent=2))
+print("Agent done")
