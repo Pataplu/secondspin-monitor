@@ -70,16 +70,16 @@ def send_mail(current, previous):
 
     msg = MIMEText(body)
     msg["Subject"] = "SecondSpin – wijziging gedetecteerd"
-msg["From"] = os.environ["EMAIL_FROM"]
-msg["To"] = os.environ["EMAIL_TO"]
+    msg["From"] = os.environ["EMAIL_FROM"]
+    msg["To"] = os.environ["EMAIL_TO"]
 
-with smtplib.SMTP("smtp.gmail.com", 587) as server:
-    server.starttls()
-    server.login(
-        os.environ["EMAIL_FROM"],
-        os.environ["EMAIL_PASSWORD"]
-    )
-    server.send_message(msg)
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(
+            os.environ["EMAIL_FROM"],
+            os.environ["EMAIL_PASSWORD"]
+        )
+        server.send_message(msg)
 
     print("📧 Mail verstuurd")
 
