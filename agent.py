@@ -1,13 +1,14 @@
 import json
 import requests
 from bs4 import BeautifulSoup
-
 import time
 from pathlib import Path
+import os
+import smtplib
+from email.mime.text import MIMEText
 
 LOCK_FILE = Path("last_run.txt")
 MIN_INTERVAL = 15 * 60  # 15 minuten
-
 now = int(time.time())
 
 if LOCK_FILE.exists():
@@ -20,7 +21,6 @@ LOCK_FILE.write_text(str(now))
 
 URL = "https://www.secondspin.nl/shop/nieuw-binnen"
 STATE_FILE = "state.json"
-# cron wake-up
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0"
@@ -38,7 +38,6 @@ def save_state(state):
         json.dump(state, f)
 
 def extract_title(soup):
-    # Probeer meerdere opties, in volgorde van betrouwbaarheid
     candidates = []
 
     h1 = soup.select_one("h1.page-title")
@@ -49,7 +48,6 @@ def extract_title(soup):
     if h1_any:
         candidates.append(h1_any.get_text(strip=True))
 
-    # Fallback: zoek tekst die met "Nieuw Binnen" begint
     for text in soup.stripped_strings:
         if text.lower().startswith("nieuw binnen"):
             candidates.append(text)
@@ -62,6 +60,25 @@ def extract_results(soup):
         if "resultaten" in text.lower():
             return text
     return "UNKNOWN"
+
+def send_mail(current, previous):
+    body = (
+        "Wijziging gedetecteerd op SecondSpin:\n\n"
+        f"Vorige:\n{previous}\n\n"
+        f"Huidige:\n{current}\n"
+    )
+
+    msg = MIMEText(body)
+    msg["Subject"] = "SecondSpin – wijziging gedetecteerd"
+    msg["From"] = os.environ["SMTP_USER"]
+    msg["To"] = os.environ["MAIL_TO"]
+
+    with smtplib.SMTP(os.environ["SMTP_HOST"], int(os.environ["SMTP_PORT"])) as server:
+        server.starttls()
+        server.login(os.environ["SMTP_USER"], os.environ["SMTP_PASS"])
+        server.send_message(msg)
+
+    print("📧 Mail verstuurd")
 
 def run():
     response = requests.get(URL, headers=HEADERS, timeout=15)
@@ -93,11 +110,11 @@ def run():
             print("🔔 Aantal resultaten gewijzigd")
             changed = True
     else:
-        # Eerste run
-        changed = True
+        changed = True  # eerste run
 
     if changed:
         print("🚨 WIJZIGING GEDETECTEERD")
+        send_mail(current, previous)
     else:
         print("Geen wijziging")
 
