@@ -7,45 +7,41 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 
+STATE_FILE = Path("state.json")
 LOCK_FILE = Path("last_run.txt")
 MIN_INTERVAL = 15 * 60
 now = int(time.time())
 
+# 15-min guard
 if LOCK_FILE.exists():
-    last = int(LOCK_FILE.read_text().strip())
+    last = int(LOCK_FILE.read_text())
     if now - last < MIN_INTERVAL:
         exit(0)
 
 LOCK_FILE.write_text(str(now))
 
 URL = "https://www.secondspin.nl/shop/nieuw-binnen"
-STATE_FILE = "state.json"
-
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 def load_state():
-    try:
-        with open(STATE_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return {}
+    if STATE_FILE.exists():
+        return json.loads(STATE_FILE.read_text())
+    return {}
 
 def save_state(state):
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f)
+    STATE_FILE.write_text(json.dumps(state, indent=2))
 
 def extract_title(soup):
-    h1 = soup.select_one("h1.page-title")
-    if h1:
+    h1 = soup.find("h1")
+    if h1 and h1.get_text(strip=True):
         return h1.get_text(strip=True)
-    h1_any = soup.find("h1")
-    return h1_any.get_text(strip=True) if h1_any else "UNKNOWN"
+    return None  # <-- GEEN UNKNOWN MEER
 
 def extract_results(soup):
-    for text in soup.stripped_strings:
-        if "resultaten" in text.lower():
-            return text
-    return "UNKNOWN"
+    for t in soup.stripped_strings:
+        if "resultaten" in t.lower():
+            return t
+    return None
 
 def send_mail(current, previous):
     body = (
@@ -59,13 +55,10 @@ def send_mail(current, previous):
     msg["From"] = os.environ["EMAIL_FROM"]
     msg["To"] = os.environ["EMAIL_TO"]
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(
-            os.environ["EMAIL_FROM"],
-            os.environ["EMAIL_PASSWORD"]
-        )
-        server.send_message(msg)
+    with smtplib.SMTP("smtp.gmail.com", 587) as s:
+        s.starttls()
+        s.login(os.environ["EMAIL_FROM"], os.environ["EMAIL_PASSWORD"])
+        s.send_message(msg)
 
 def run():
     html = requests.get(URL, headers=HEADERS, timeout=15).text
@@ -73,15 +66,17 @@ def run():
 
     current = {
         "title": extract_title(soup),
-        "results": extract_results(soup)
+        "results": extract_results(soup),
     }
 
     previous = load_state()
 
+    # ❗ alleen mailen bij échte wijziging
     if current != previous:
         send_mail(current, previous)
-
-    save_state(current)
+        save_state(current)
+    else:
+        save_state(current)
 
 if __name__ == "__main__":
     run()
