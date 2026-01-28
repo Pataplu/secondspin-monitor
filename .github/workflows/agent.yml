@@ -29,11 +29,12 @@ jobs:
       - name: Run agent
         run: python agent.py
 
-      - name: Commit state (agent-state branch)
-        run: |
-          git checkout -B agent-state
-          git config user.name "secondspin-agent"
-          git config user.email "agent@github.com"
-          git add state.json last_run.txt
-          git commit -m "Update state" || echo "No changes"
-          git push origin agent-state
+- name: Commit state (agent-state branch)
+  run: |
+    git checkout agent-state || git checkout -b agent-state
+    git pull origin agent-state --rebase || true
+    git config user.name "secondspin-agent"
+    git config user.email "agent@github.com"
+    git add state.json last_run.txt
+    git commit -m "Update state" || echo "No changes"
+    git push origin agent-state
