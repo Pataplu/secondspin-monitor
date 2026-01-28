@@ -2,6 +2,22 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
+import time
+from pathlib import Path
+
+LOCK_FILE = Path("last_run.txt")
+MIN_INTERVAL = 15 * 60  # 15 minuten
+
+now = int(time.time())
+
+if LOCK_FILE.exists():
+    last = int(LOCK_FILE.read_text().strip())
+    if now - last < MIN_INTERVAL:
+        print("⏭️ Skip: run was less than 15 minutes ago")
+        exit(0)
+
+LOCK_FILE.write_text(str(now))
+
 URL = "https://www.secondspin.nl/shop/nieuw-binnen"
 STATE_FILE = "state.json"
 # cron wake-up
