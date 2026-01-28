@@ -5,45 +5,18 @@ on:
     - cron: "*/5 * * * *"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
-concurrency:
-  group: secondspin-agent
-  cancel-in-progress: true
-
 jobs:
   run-agent:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install requests beautifulsoup4
-
+      - run: pip install requests beautifulsoup4
       - name: Run agent
         env:
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: python agent.py
-
-     - name: Commit state
-  run: |
-    git fetch origin agent-state || true
-    git checkout agent-state || git checkout -b agent-state
-    git pull origin agent-state --rebase || true
-    git config user.name "secondspin-agent"
-    git config user.email "agent@github.com"
-    git add state.json last_run.txt
-    git commit -m "Update state" || echo "No changes"
-    git push origin agent-state
