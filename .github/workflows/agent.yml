@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: secondspin-agent
+  cancel-in-progress: true
+
 jobs:
   run-agent:
     runs-on: ubuntu-latest
@@ -26,18 +30,18 @@ jobs:
       - name: Install dependencies
         run: pip install requests beautifulsoup4
 
-- name: Run agent
-env:
-EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-EMAIL_TO: ${{ secrets.EMAIL_TO }}
-run: python agent.py
+      - name: Run agent
+        env:
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python agent.py
 
-      - name: Save state
+      - name: Commit state
         run: |
-          touch last_run.txt
+          git checkout agent-state || git checkout -b agent-state
           git config user.name "secondspin-agent"
           git config user.email "agent@github.com"
           git add state.json last_run.txt
           git commit -m "Update state" || echo "No changes"
-          git push
+          git push origin agent-state
