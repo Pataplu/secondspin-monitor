@@ -72,7 +72,7 @@ def run():
     previous = load_state()
 
     # ❗ alleen mailen bij échte wijziging
-    if current != previous:
+    if current.get("results") != previous.get("results"):
         send_mail(current, previous)
         save_state(current)
     else:
