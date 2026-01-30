@@ -7,6 +7,9 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 
+permissions:
+  contents: write
+
 STATE_FILE = Path("state.json")
 LOCK_FILE = Path("last_run.txt")
 MIN_INTERVAL = 15 * 60
