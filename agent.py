@@ -70,6 +70,9 @@ def run():
     }
 
     previous = load_state()
+    
+print("DEBUG previous:", previous)
+print("DEBUG current:", current)
 
     # ❗ alleen mailen bij échte wijziging
     if current.get("results") != previous.get("results"):
